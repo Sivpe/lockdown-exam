@@ -2875,7 +2875,7 @@ function startFrameSession(){
   var n=$("fr-note"); if(n){ n.style.display="none"; n.textContent=""; }
   updateVioBadge();
   var fr=$("fr-frame");
-  fr.onload=function(){ injectFrameProtection(); watchFrameFocus(); };
+  fr.onload=function(){ injectFrameProtection(); watchFrameFocus(); passNameToFrame(); };
   fr.srcdoc=S.frameFile.content;
   startFrameTimer();
   requestFull();
@@ -2892,6 +2892,38 @@ function startFrameTimer(){
 /* Add the same copy/paste protection INSIDE the uploaded exam's document.
    srcdoc frames are same-origin, so this normally works; if a file makes it
    impossible we say so honestly instead of pretending. */
+/* Pass the name the student already typed at the exam-hall entry into the
+   exam's own name gate and start it — one name entry only (Steven, 2026-11-10).
+   Recognises the gate used by Steven's quiz files (#studentName / #nameInput +
+   #startBtn). A file without that gate is left exactly as it is. */
+function passNameToFrame(attempt){
+  var fr=$("fr-frame");
+  if(!fr || !S.active || S.finished){ return; }
+  attempt = attempt || 0;
+  try{
+    var doc=fr.contentDocument, win=fr.contentWindow;
+    if(!doc || !win){ return; }
+    var inp=doc.querySelector('#studentName, #nameInput, input[autocomplete="name"]');
+    if(!inp){ return; }
+    if(!(inp.getClientRects && inp.getClientRects().length)){ return; } /* gate already passed */
+    if(inp.value !== S.studentName){
+      inp.value = S.studentName;
+      try{ inp.dispatchEvent(new win.InputEvent("input", { bubbles:true })); }catch(e){ try{ inp.dispatchEvent(new win.Event("input", { bubbles:true })); }catch(e2){} }
+      try{ inp.dispatchEvent(new win.Event("keyup", { bubbles:true })); }catch(e){}
+      try{ inp.dispatchEvent(new win.Event("change", { bubbles:true })); }catch(e){}
+    }
+    var btn=doc.querySelector('#startBtn');
+    if(btn && !btn.disabled){ btn.click(); }
+    if(attempt < 3){
+      setTimeout(function(){
+        try{
+          var inp2=doc.querySelector('#studentName, #nameInput, input[autocomplete="name"]');
+          if(inp2 && inp2.getClientRects && inp2.getClientRects().length){ passNameToFrame(attempt+1); }
+        }catch(e){}
+      }, 450);
+    }
+  }catch(e){ /* file refused access — its own gate stays; the name was still typed only once outside */ }
+}
 function injectFrameProtection(){
   var fr=$("fr-frame");
   try{
