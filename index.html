@@ -223,7 +223,7 @@
       <div class="card">
         <div class="kicker">Student entry</div>
         <h1 class="h-big">Enter the exam hall</h1>
-        <p class="sub">Type your full name, pick your exam, then read the rules. Once the exam starts, stay in this page until you finish.</p>
+        <p class="sub">Type your full name, choose your class, and type the exam code your teacher gives you. Once the exam starts, stay in this page until you finish.</p>
         <div class="field">
           <label for="stu-name">Your full name</label>
           <input id="stu-name" type="text" autocomplete="name" placeholder="e.g. Sok Dara" />
@@ -237,10 +237,8 @@
           </select>
         </div>
         <div class="field">
-          <label>Choose your exam (or type the code from your teacher)</label>
-          <div id="exam-list"></div>
-          <p class="small-note" id="stu-upload-note" style="display:none;">📁 Exams marked <b>MY FILE</b> were uploaded by your teacher and live on this device — tap one to choose it, then continue.</p>
-          <input id="stu-code" type="text" placeholder="Exam code — e.g. U2GQ" style="margin-top:12px; text-transform:uppercase;" autocapitalize="characters" />
+          <label>Exam code — your teacher will tell you the code</label>
+          <input id="stu-code" type="text" placeholder="Type the exam code" style="margin-top:12px; text-transform:uppercase;" autocapitalize="characters" />
         </div>
         <p class="err" id="home-err"></p>
         <div style="margin-top:16px;">
@@ -1678,7 +1676,6 @@ function renderExamLists(){
   var allExams={}; Object.keys(EXAMS).forEach(function(k){ allExams[k]=EXAMS[k]; }); Object.keys(BAKED_EXAMS).forEach(function(k){ allExams[k]=BAKED_EXAMS[k]; });
   var keys=Object.keys(allExams).filter(function(k){ return !isHiddenBuiltin(k); }), h="", th="";
   keys.forEach(function(k){ var e=allExams[k]; var qn=(typeof e.qcount!=="undefined" ? e.qcount : (e.questions ? e.questions.length : 0)); var smeta = e.subtitle ? e.subtitle : (e.subject+" \u00b7 "+qn+" questions \u00b7 "+e.mins+" minutes"); var tmeta = e.subtitle ? (e.subtitle+" \u00b7 auto-submit after "+e.limit+" strikes") : (qn+" questions \u00b7 "+e.mins+" min \u00b7 auto-submit after "+e.limit+" strikes");
-    h += '<button type="button" class="exam-pick" data-code="'+e.code+'" onclick="pickExam(\''+e.code+'\')"><span class="code-chip">'+e.code+'</span><span class="et">'+esc(e.title)+'</span><span class="em">'+smeta+'</span></button>';
     var isBuiltin = BUILTIN_CODES.indexOf(e.code) >= 0;
     var confirmText = isBuiltin
       ? "Remove <b>"+e.code+"</b> from this device? You can restore it later in the Teacher tab."
@@ -1687,22 +1684,17 @@ function renderExamLists(){
       + '<button type="button" class="btn secondary small del-btn" onclick="askRemoveExam(\''+e.code+'\')">🗑 Remove</button></div>'
       + '<div class="confirm-box" id="confirm-'+e.code+'" style="display:none;"><p>'+confirmText+'</p><div class="btnrow"><button type="button" class="btn danger small" onclick="confirmRemoveExam(\''+e.code+'\')">Yes, remove it</button><button type="button" class="btn secondary small" onclick="cancelRemoveExam(\''+e.code+'\')">Cancel</button></div></div>';
   });
-  /* Uploaded exam files (same IndexedDB store as the Teacher tab) also appear
-     in the Student chooser — they have no code, so they are picked from the list. */
+  /* Uploaded exam files have no code, so they are NOT listed for students
+     (students enter by code only) — the teacher starts them from the Teacher tab. */
   var upRecs = (typeof fileCache !== "undefined" && fileCache)
     ? Object.keys(fileCache).map(function(k){ return fileCache[k]; }).sort(function(a, b){ return b.uploadedAt - a.uploadedAt; })
     : [];
   upRecs.forEach(function(r){
-    h += '<button type="button" class="exam-pick'+(studentFileId===r.id ? " on" : "")+'" data-file="'+esc(r.id)+'" onclick="pickUploadedExam(\''+r.id+'\')"><span class="code-chip file">MY FILE</span><span class="et">'+esc(r.name)+'</span><span class="em">Uploaded exam file · runs inside the lockdown</span></button>';
   });
-  if(!keys.length && !upRecs.length){
-    h += '<p class="log-empty">No exams available right now — ask your teacher.</p>';
-  }
   if(!keys.length){
     th += '<p class="log-empty">No ready exams on this device. Restore the sample exams below, or build your own exam.</p>';
   }
-  $("exam-list").innerHTML=h; $("teacher-exam-list").innerHTML=th;
-  var note=$("stu-upload-note"); if(note){ note.style.display = upRecs.length ? "block" : "none"; }
+  $("teacher-exam-list").innerHTML=th;
   var hidden=getHiddenBuiltins(), rr=$("restore-samples-row");
   if(rr){
     rr.style.display = hidden.length ? "block" : "none";
