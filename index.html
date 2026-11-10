@@ -240,7 +240,7 @@
           <label>Choose your exam (or type the code from your teacher)</label>
           <div id="exam-list"></div>
           <p class="small-note" id="stu-upload-note" style="display:none;">📁 Exams marked <b>MY FILE</b> were uploaded by your teacher and live on this device — tap one to choose it, then continue.</p>
-          <input id="stu-code" type="text" placeholder="Exam code — e.g. ENG6" style="margin-top:12px; text-transform:uppercase;" autocapitalize="characters" />
+          <input id="stu-code" type="text" placeholder="Exam code — e.g. U2GQ" style="margin-top:12px; text-transform:uppercase;" autocapitalize="characters" />
         </div>
         <p class="err" id="home-err"></p>
         <div style="margin-top:16px;">
@@ -521,38 +521,7 @@
 <script>
 /* ================= DATA ================= */
 var EXAMS = {
-  "ENG6": { code:"ENG6", title:"English Test — Grammar & Vocabulary", subject:"Power Up 6 · Mixed skills", mins:20, limit:3, questions:[
-    { t:"mcq", q:"She ___ to school by bus every day.", o:["go","goes","going","gone"], a:1 },
-    { t:"mcq", q:"They ___ football when it started to rain.", o:["are playing","was playing","were playing","plays"], a:2 },
-    { t:"mcq", q:"I have lived in Phnom Penh ___ 2019.", o:["for","since","from","until"], a:1 },
-    { t:"mcq", q:"The letter ___ by the teacher yesterday.", o:["wrote","was written","is write","has wrote"], a:1 },
-    { t:"mcq", q:"Choose the word that means “very tired”.", o:["excited","exhausted","embarrassed","enormous"], a:1 },
-    { t:"tf", q:"True or false: “He don't like pizza” is correct English.", o:["True","False"], a:1 },
-    { t:"mcq", q:"If it ___ tomorrow, we will stay at home.", o:["rains","will rain","rained","would rain"], a:0 },
-    { t:"mcq", q:"She is the student ___ won the speaking prize.", o:["which","who","where","what"], a:1 },
-    { t:"short", q:"Write the past participle of the verb “write”.", accept:["written"] },
-    { t:"short", q:"Write one word: the opposite of “dangerous” is “___”.", accept:["safe"] }
-  ]},
-  "VOC5": { code:"VOC5", title:"Unit 5 Vocabulary Quiz", subject:"Power Up 6 · Unit 5 words", mins:15, limit:3, questions:[
-    { t:"mcq", q:"A place where you can borrow books is a ___.", o:["bakery","library","museum","stadium"], a:1 },
-    { t:"mcq", q:"You feel ___ when something makes you laugh a lot.", o:["bored","amused","frightened","disappointed"], a:1 },
-    { t:"mcq", q:"Choose the feeling: “I studied all night, so now I am completely ___.”", o:["exhausted","proud","curious","relaxed"], a:0 },
-    { t:"tf", q:"True or false: “nervous” means feeling calm and happy.", o:["True","False"], a:1 },
-    { t:"mcq", q:"A person who writes books is an ___.", o:["author","editor","athlete","inventor"], a:0 },
-    { t:"mcq", q:"When you are ___ , you really want to know more about something.", o:["ashamed","curious","jealous","guilty"], a:1 },
-    { t:"short", q:"Write the word: feeling afraid = f___ (8 letters, starts with f).", accept:["frightened","scared"] },
-    { t:"short", q:"Write one word: the feeling when you pass a difficult exam — you feel ___ of yourself.", accept:["proud"] }
-  ]},
-  "MIX01": { code:"MIX01", title:"General Knowledge Quiz", subject:"Mixed · Warm-up test", mins:10, limit:3, questions:[
-    { t:"mcq", q:"How many days are there in a leap year?", o:["364","365","366","367"], a:2 },
-    { t:"mcq", q:"What is 15 × 4?", o:["45","50","60","75"], a:2 },
-    { t:"mcq", q:"Which is the largest planet in our solar system?", o:["Mars","Earth","Jupiter","Saturn"], a:2 },
-    { t:"tf", q:"True or false: Water boils at 100°C at sea level.", o:["True","False"], a:0 },
-    { t:"mcq", q:"The capital city of Cambodia is ___.", o:["Siem Reap","Battambang","Phnom Penh","Kampot"], a:2 },
-    { t:"mcq", q:"Which of these is a mammal?", o:["Shark","Dolphin","Octopus","Penguin"], a:1 },
-    { t:"short", q:"Write the number: half of 90 is ___.", accept:["45"] },
-    { t:"short", q:"Write the English word for the season after summer.", accept:["autumn","fall"] }
-  ]}
+  
 };
 
 /* ================= BAKED FILE EXAM: U2GQ ================= */
@@ -1627,7 +1596,7 @@ function dispatchExamResult(score, scoreMax, timeUsed){
    on this device only (persisted in localStorage) — fully reversible via
    "Restore sample exams" in the Teacher tab. Teacher-built MCQ exams live in
    EXAMS for the session and are removed outright from that list. */
-var BUILTIN_CODES = ["ENG6","VOC5","MIX01","U2GQ","U2VR","U2LV"];
+var BUILTIN_CODES = ["U2GQ","U2VR","U2LV"];
 var CUSTOM_CODES = {};
 var HIDDEN_KEY = "lockdownHiddenBuiltinCodes";
 var studentFileId = null; /* uploaded exam selected in the Student tab */
