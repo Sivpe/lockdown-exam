@@ -2030,7 +2030,9 @@ var BAKED_EXAMS = {
   "U2GQ": { code:"U2GQ", title:"Unit 2 Grammar Quiz \u2014 Present Perfect and Progressive", subject:"Go Beyond 4 \u00b7 Unit 2", qcount:50, mins:20, limit:3, fileName:"Unit 2 Grammar Quiz - Present Perfect and Progressive.html", baked:true, size:42342 },
   "U2VR": { code:"U2VR", title:"Workbook Unit 2 \u2014 Vocabulary and Reading Quiz", subject:"Go Beyond 4 \u00b7 Workbook Unit 2", subtitle:"Go Beyond 4 \u00b7 Workbook Unit 2 \u00b7 Vocabulary 50 + Reading 50 \u00b7 30 minutes", mins:30, limit:3, size:54162, fileName:"Workbook_Unit_2_Vocabulary_and_Reading_Quiz.html", baked:true },
   "U2LV": { code:"U2LV", title:"Workbook Unit 2 \u2014 Listening and Vocabulary 2 Quiz", subject:"Go Beyond 4 \u00b7 Workbook Unit 2", subtitle:"Go Beyond 4 \u00b7 Workbook Unit 2 \u00b7 Listening 50 + Vocabulary 50 \u00b7 30 minutes", mins:30, limit:3, size:1318601, fileName:"Workbook_Unit_2_Listening_and_Vocabulary_2_Quiz.html", baked:true },
-  "U45V": { code:"U45V", title:"Units 4–5 Vocabulary Quiz — Power Up 6", subject:"Power Up 6 · Units 4–5", subtitle:"Power Up 6 · Units 4–5 · Vocabulary · 50 questions · 25 minutes", mins:25, limit:3, size:48666, fileName:"Unit_4-5_Vocabulary_Quiz.html", baked:true }
+  "U45V": { code:"U45V", title:"Units 4–5 Vocabulary Quiz — Power Up 6", subject:"Power Up 6 · Units 4–5", subtitle:"Power Up 6 · Units 4–5 · Vocabulary · 50 questions · 25 minutes", mins:25, limit:3, size:48666, fileName:"Unit_4-5_Vocabulary_Quiz.html", baked:true },
+  "A2T3": { code:"A2T3", title:"Cambridge A2 Test 3", subject:"Cambridge A2 Key for Schools", subtitle:"Cambridge A2 Key for Schools · Reading 30 · Listening 25 · Writing 30 · 90 minutes", mins:90, limit:3, size:7429401, fileName:"Test-3-Interactive-Trainer.html", baked:true, url:"exams/A2T3.html" },
+  "A2T4": { code:"A2T4", title:"Cambridge A2 Test 4", subject:"Cambridge A2 Key for Schools", subtitle:"Cambridge A2 Key for Schools · Reading 30 · Listening 25 · Writing 30 · 90 minutes", mins:90, limit:3, size:19031556, fileName:"Test-4-Interactive-Trainer.html", baked:true, url:"exams/A2T4.html" }
 };
 var _bakedCache = {};
 function getBakedContent(code){
@@ -2047,6 +2049,7 @@ function getBakedContent(code){
 function getBakedFileRec(code){
   var e = BAKED_EXAMS[code];
   if(!e) return null;
+  if(e.url){ return { id:"baked-"+code, name:e.title, fileName:e.fileName, size:(e.size || 0), uploadedAt:0, content:null, url:e.url, baked:true }; }
   return { id:"baked-"+code, name:e.title, fileName:e.fileName, size:(e.size || 0), uploadedAt:0, content:getBakedContent(code), baked:true };
 }
 
@@ -2173,7 +2176,7 @@ function dispatchExamResult(score, scoreMax, timeUsed){
    on this device only (persisted in localStorage) — fully reversible via
    "Restore sample exams" in the Teacher tab. Teacher-built MCQ exams live in
    EXAMS for the session and are removed outright from that list. */
-var BUILTIN_CODES = ["U2GQ","U2VR","U2LV","U45V"];
+var BUILTIN_CODES = ["U2GQ","U2VR","U2LV","U45V","A2T3","A2T4"];
 var CUSTOM_CODES = {};
 var HIDDEN_KEY = "lockdownHiddenBuiltinCodes";
 var studentFileId = null; /* uploaded exam selected in the Student tab */
@@ -2302,7 +2305,7 @@ function goToRules(){
   }
   if(code && BAKED_EXAMS[code] && !isHiddenBuiltin(code)){
     var brec = getBakedFileRec(code);
-    if(!brec || !brec.content){ err.textContent="That exam could not be loaded. Please try again."; err.style.display="block"; return; }
+    if(!brec || (!brec.content && !brec.url)){ err.textContent="That exam could not be loaded. Please try again."; err.style.display="block"; return; }
     err.style.display="none";
     S.mode="frame"; S.frameFile=brec;
     var fecB=$("frame-entry-card"); if(fecB) fecB.style.display="none";
@@ -2876,7 +2879,8 @@ function startFrameSession(){
   updateVioBadge();
   var fr=$("fr-frame");
   fr.onload=function(){ injectFrameProtection(); watchFrameFocus(); passNameToFrame(); };
-  fr.srcdoc=S.frameFile.content;
+  if(S.frameFile.url){ fr.removeAttribute("srcdoc"); fr.src=S.frameFile.url; }
+  else { fr.removeAttribute("src"); fr.srcdoc=S.frameFile.content; }
   startFrameTimer();
   requestFull();
 }
@@ -2903,7 +2907,7 @@ function passNameToFrame(attempt){
   try{
     var doc=fr.contentDocument, win=fr.contentWindow;
     if(!doc || !win){ return; }
-    var inp=doc.querySelector('#studentName, #nameInput, input[autocomplete="name"]');
+    var inp=doc.querySelector('#gateName, #studentName, #nameInput, input[autocomplete="name"]');
     if(!inp){ return; }
     if(!(inp.getClientRects && inp.getClientRects().length)){ return; } /* gate already passed */
     if(inp.value !== S.studentName){
@@ -2917,7 +2921,7 @@ function passNameToFrame(attempt){
     if(attempt < 3){
       setTimeout(function(){
         try{
-          var inp2=doc.querySelector('#studentName, #nameInput, input[autocomplete="name"]');
+          var inp2=doc.querySelector('#gateName, #studentName, #nameInput, input[autocomplete="name"]');
           if(inp2 && inp2.getClientRects && inp2.getClientRects().length){ passNameToFrame(attempt+1); }
         }catch(e){}
       }, 450);
@@ -2965,7 +2969,7 @@ function endFrameSession(reason){
   document.body.classList.remove("exam-on");
   $("brandbar").style.display="block"; $("mainwrap").style.display="block";
   var fr=$("fr-frame");
-  if(fr){ fr.onload=null; try{ fr.srcdoc=""; }catch(e){} }
+  if(fr){ fr.onload=null; try{ fr.srcdoc=""; }catch(e){} try{ fr.src="about:blank"; }catch(e){} }
 
   var usedSec=Math.max(0, Math.round((S.endAt-S.startAt)/1000));
   var usedTxt=Math.floor(usedSec/60)+"m "+(usedSec%60)+"s";
