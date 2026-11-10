@@ -1502,7 +1502,8 @@ var S = {
   active:false, finished:false, warnOpen:false, lastResultText:"",
   awayEpisode:false, strikeGuard:false,
   mode:"quiz", frameFile:null, frameInt:null,
-  frameProtected:false, frameNote:"", frameReport:""
+  frameProtected:false, frameNote:"", frameReport:"",
+  frameFocused:false, frameWin:null, blurTimer:null
 };
 
 function $(id){ return document.getElementById(id); }
@@ -1879,6 +1880,25 @@ function onReturn(){
      so any duplicate return signal in this same episode is ignored. */
   recordStrike("Left the exam", away, "Student left the page (app switch, other tab, or Home) for about "+away+"s.");
 }
+function resolveFrameBlur(){
+  S.blurTimer=null;
+  if(!S.active || S.finished){ return; }
+  if(S.frameFocused){ return; } /* the tap went into the exam frame — an internal move, not a leave */
+  var ae=document.activeElement;
+  if(ae && ae.id==="fr-frame"){ S.frameFocused=true; return; } /* fallback when frame focus cannot be watched */
+  onLeave("blur");
+}
+function watchFrameFocus(){
+  var fr=$("fr-frame");
+  try{
+    var w=fr.contentWindow;
+    if(!w){ return; }
+    if(S.frameWin===w){ return; }
+    S.frameWin=w;
+    w.addEventListener("focus", function(){ S.frameFocused=true; if(S.blurTimer){ clearTimeout(S.blurTimer); S.blurTimer=null; } });
+    w.addEventListener("blur", function(){ S.frameFocused=false; });
+  }catch(e){ /* cross-origin or not ready — resolveFrameBlur falls back to document.activeElement */ }
+}
 function ackWarning(){
   S.warnOpen=false;
   S.strikeGuard=false;
@@ -1898,8 +1918,19 @@ function installLockdown(){
   });
   window.addEventListener("pagehide", function(){ onLeave("pagehide"); });
   window.addEventListener("pageshow", function(){ onReturn(); });
-  window.addEventListener("blur", function(){ onLeave("blur"); });
-  window.addEventListener("focus", function(){ onReturn(); });
+  window.addEventListener("blur", function(){
+    if(S.active && S.mode==="frame" && !S.finished){
+      /* In frame mode, tapping INTO the exam frame blurs this window — that is
+         the student working, not leaving. Defer and let resolveFrameBlur decide. */
+      if(S.blurTimer){ clearTimeout(S.blurTimer); }
+      S.blurTimer=setTimeout(resolveFrameBlur, 300);
+    } else { onLeave("blur"); }
+  });
+  window.addEventListener("focus", function(){
+    if(S.blurTimer){ clearTimeout(S.blurTimer); S.blurTimer=null; }
+    if(S.frameFocused){ return; } /* focus is inside the exam frame — still in the exam */
+    onReturn();
+  });
   document.addEventListener("fullscreenchange", function(){
     if(S.active && !S.finished && !document.fullscreenElement){
       /* Fullscreen exit can fire together with hidden/blur for one leave.
@@ -2280,6 +2311,7 @@ function startFrameSession(){
   if(!S.frameFile){ backHome(); return; }
   S.idx=0; S.incidents=[]; S.leaves=0; S.blocked=0; S.finished=false; S.warnOpen=false; S.leftAt=0; S.awayEpisode=false; S.strikeGuard=false;
   S.answers=[]; S.frameProtected=false; S.frameNote="";
+  S.frameFocused=false; S.frameWin=null; if(S.blurTimer){ clearTimeout(S.blurTimer); S.blurTimer=null; }
   S.startAt=Date.now(); S.active=true;
   document.body.classList.add("exam-on");
   $("brandbar").style.display="none"; $("mainwrap").style.display="none";
@@ -2289,7 +2321,7 @@ function startFrameSession(){
   var n=$("fr-note"); if(n){ n.style.display="none"; n.textContent=""; }
   updateVioBadge();
   var fr=$("fr-frame");
-  fr.onload=function(){ injectFrameProtection(); };
+  fr.onload=function(){ injectFrameProtection(); watchFrameFocus(); };
   fr.srcdoc=S.frameFile.content;
   startFrameTimer();
   requestFull();
@@ -2338,6 +2370,7 @@ function hideFrameFinish(){ $("frame-finish-overlay").classList.remove("show"); 
 function endFrameSession(reason){
   if(S.finished) return;
   S.finished=true; S.active=false; S.endAt=Date.now();
+  S.frameFocused=false; if(S.blurTimer){ clearTimeout(S.blurTimer); S.blurTimer=null; }
   clearInterval(S.frameInt);
   S.warnOpen=false;
   $("warn-overlay").classList.remove("show");
