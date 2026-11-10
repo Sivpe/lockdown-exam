@@ -250,6 +250,21 @@
       </div>
     </div>
 
+    <!-- TEACHER GATE -->
+    <div id="panel-teachergate" style="display:none;">
+      <div class="card">
+        <div class="kicker">Teacher</div>
+        <h2 class="h-big">Teachers only 🔒</h2>
+        <p class="sub">This side of the exam hall is for the teacher. Students: please go back to the Student tab.</p>
+        <label class="fld"><span>Teacher password</span>
+          <input id="teacherGatePw" type="password" placeholder="Password" autocomplete="off" onkeydown="if(event.key==='Enter')unlockTeacher()" />
+        </label>
+        <p class="err" id="teacherGateErr" style="display:none;">That password is not correct.</p>
+        <button class="btn" onclick="unlockTeacher()">Open teacher tab →</button>
+        <p style="margin-top:12px;"><a href="#" onclick="showRole('student'); return false;">← Back to Student tab</a></p>
+      </div>
+    </div>
+
     <!-- TEACHER PANEL -->
     <div id="panel-teacher" style="display:none;">
       <div class="card">
@@ -1639,12 +1654,24 @@ function confirmRemoveExam(code){
   renderExamLists();
 }
 function showRole(r){
+  var locked = (r==="teacher" && sessionStorage.getItem("lockdownTeacherOK")!=="1");
   S.role=r;
   $("tab-student").classList.toggle("on", r==="student");
   $("tab-teacher").classList.toggle("on", r==="teacher");
   $("panel-student").style.display = r==="student" ? "block":"none";
-  $("panel-teacher").style.display = r==="teacher" ? "block":"none";
+  $("panel-teacher").style.display = (r==="teacher" && !locked) ? "block":"none";
+  $("panel-teachergate").style.display = locked ? "block":"none";
   renderExamLists(); /* refresh so new uploads / removals show without a rebuild */
+}
+function unlockTeacher(){
+  if($("teacherGatePw").value==="TeacherSP"){
+    sessionStorage.setItem("lockdownTeacherOK","1");
+    $("teacherGateErr").style.display="none";
+    $("teacherGatePw").value="";
+    showRole("teacher");
+  } else {
+    $("teacherGateErr").style.display="block";
+  }
 }
 function renderExamLists(){
   var allExams={}; Object.keys(EXAMS).forEach(function(k){ allExams[k]=EXAMS[k]; }); Object.keys(BAKED_EXAMS).forEach(function(k){ allExams[k]=BAKED_EXAMS[k]; });
