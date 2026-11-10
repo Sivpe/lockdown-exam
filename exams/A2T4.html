@@ -341,5 +341,78 @@ document.getElementById('offlineBtn').addEventListener('click',async()=>{
 });
 updateProgress();
 </script>
+
+<script>
+/* Teacher panel (added 2026-11-10 at Steven's request): password-gated answer key.
+   Same teacher password as every quiz on this site; only a SHA-256 digest is stored. */
+(function () {
+  var TEACHER_PW_HASH = "d08599c2a0edcf3049c73def6dd113c8801817872d8b76f42887f7be4e466755";
+  var unlocked = false;
+  function sha256Hex(txt) {
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(txt)).then(function (buf) {
+      return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+    });
+  }
+  function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  var st = document.createElement("style");
+  st.textContent = "#teacherFab{position:fixed;right:14px;bottom:14px;z-index:9998;background:#0f766e;color:#fff;border:none;border-radius:999px;padding:10px 18px;font:600 14px system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer}"
+    + "#teacherPanel{position:fixed;inset:0;z-index:9999;background:rgba(10,20,30,.55);display:none}"
+    + "#teacherPanel.open{display:block}"
+    + "#teacherPanel .tk-card{background:#fffdf7;max-width:760px;margin:4vh auto;max-height:92vh;overflow:auto;border-radius:14px;padding:22px 26px;font:15px/1.55 system-ui,sans-serif;color:#14313a}"
+    + "#teacherPanel h2{margin:18px 0 6px;color:#0f766e}#teacherPanel h3{margin:14px 0 4px}#teacherPanel p{margin:2px 0}"
+    + ".tk-close{float:right;background:#b91c1c;color:#fff;border:none;border-radius:8px;padding:8px 14px;font:600 14px system-ui,sans-serif;cursor:pointer}"
+    + ".tk-model{background:#eef7ee;border:1px solid #cfe3cf;border-radius:10px;padding:12px 14px;margin:8px 0;white-space:pre-line}";
+  document.head.appendChild(st);
+  var fab = document.createElement("button");
+  fab.id = "teacherFab"; fab.type = "button"; fab.textContent = "Teacher";
+  document.body.appendChild(fab);
+  var panel = document.createElement("div");
+  panel.id = "teacherPanel";
+  panel.innerHTML = "<div class=\"tk-card\"><button class=\"tk-close\" type=\"button\">Close</button><h2 style=\"margin-top:0\">Teacher Panel \u2014 Answer Key</h2><div id=\"teacherKeyBody\"></div></div>";
+  document.body.appendChild(panel);
+  panel.querySelector(".tk-close").addEventListener("click", function () { panel.classList.remove("open"); });
+  panel.addEventListener("click", function (e) { if (e.target === panel) panel.classList.remove("open"); });
+  function partHtml(p) {
+    var h = "<h3>" + esc(p.title) + (p.note ? " \u00b7 " + esc(p.note) : "") + "</h3>";
+    (p.qs || []).forEach(function (q, i) {
+      if (Array.isArray(q[2]) && /^[A-H]$/.test(q[3])) {
+        h += "<p>" + (i + 1) + ". <b>" + esc(q[3]) + "</b> \u2014 " + esc(q[2]["ABCDEFGH".indexOf(q[3])]) + "</p>";
+      } else {
+        h += "<p>" + (i + 1) + ". <b>" + esc(q[3]) + "</b></p>";
+      }
+    });
+    (p.blanks || []).forEach(function (b) {
+      var ans = Array.isArray(b[2]) ? b[2][0] : b[2];
+      h += "<p>" + esc(b[1]) + ": <b>" + esc(ans) + "</b></p>";
+    });
+    return h;
+  }
+  function buildKey() {
+    var html = "";
+    try { html += "<h2>Reading</h2>" + readingParts.map(partHtml).join(""); } catch (e) {}
+    try { html += "<h2>Listening</h2>" + listeningParts.map(partHtml).join(""); } catch (e) {}
+    var models = document.querySelectorAll(".modelbox");
+    if (models.length) {
+      html += "<h2>Writing \u2014 model answers</h2>";
+      models.forEach(function (m) { html += "<div class=\"tk-model\">" + m.innerHTML + "</div>"; });
+    }
+    return html || "<p>The answer key could not be loaded.</p>";
+  }
+  fab.addEventListener("click", function () {
+    if (unlocked) { panel.classList.add("open"); return; }
+    var pw = window.prompt("Teachers only \u2014 type the teacher password:");
+    if (pw === null) return;
+    sha256Hex(pw).then(function (h) {
+      if (h === TEACHER_PW_HASH) {
+        unlocked = true;
+        document.getElementById("teacherKeyBody").innerHTML = buildKey();
+        panel.classList.add("open");
+      } else {
+        window.alert("That password is not correct.");
+      }
+    });
+  });
+})();
+</script>
 </body>
 </html>
