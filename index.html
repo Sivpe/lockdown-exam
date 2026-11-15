@@ -244,7 +244,7 @@
         <p class="sub">Type your full name, choose your class, and type the exam code your teacher gives you. Once the exam starts, stay in this page until you finish.</p>
         <div class="field">
           <label for="stu-name">Your full name</label>
-          <input id="stu-name" type="text" autocomplete="name" placeholder="e.g. Sok Dara" />
+          <input id="stu-name" type="text" autocomplete="name" placeholder="e.g. Sok Dara" autocorrect="off" autocapitalize="off" spellcheck="false" />
         </div>
         <div class="field">
           <label for="stu-class">Your class</label>
@@ -256,7 +256,7 @@
         </div>
         <div class="field">
           <label>Exam code — your teacher will tell you the code</label>
-          <input id="stu-code" type="text" placeholder="Type the exam code" style="margin-top:12px; text-transform:uppercase;" autocapitalize="characters" />
+          <input id="stu-code" type="text" placeholder="Type the exam code" style="margin-top:12px; text-transform:uppercase;" autocorrect="off" autocapitalize="off" autocomplete="off" spellcheck="false" />
         </div>
         <p class="err" id="home-err"></p>
         <div style="margin-top:16px;">
@@ -295,6 +295,10 @@
       <div class="card">
         <h3 class="h-med">Ready exams</h3>
         <div id="teacher-exam-list"></div>
+        <div style="margin-top:10px; border-top:1px solid var(--line); padding-top:12px;">
+          <p class="small-note">🔁 <b>One attempt per student:</b> when a student starts an exam, their phone remembers it (exam + name). A second start asks for that exam's re-attempt password — each exam has a different one, listed above. The lock lives on the student's own phone, so testing an exam on <b>this</b> phone locks it here too.</p>
+          <button type="button" class="btn secondary small" onclick="clearAttemptLocks()">Reset attempt locks on this device</button>
+        </div>
         <div id="restore-samples-row" style="display:none; margin-top:14px; border-top:1px solid var(--line); padding-top:12px;">
           <p class="small-note" id="restore-samples-text" style="margin-top:0;"></p>
           <button class="btn secondary small" type="button" onclick="restoreSamples()">↩ Restore sample exams</button>
@@ -510,6 +514,21 @@
     <p class="flag-note">When you are done, tap the exam's own Finish button inside the exam first — then “Finish lockdown session” above.</p>
   </div>
 </section>
+
+<!-- redo password overlay -->
+<div class="overlay" id="redo-overlay" role="alertdialog" aria-modal="true">
+  <div class="box">
+    <div class="warn-ic">🔁</div>
+    <h2 class="center">You already did this exam</h2>
+    <p class="center" style="margin-top:8px;" id="redo-text"></p>
+    <input id="redo-pw" type="text" placeholder="Re-attempt password" style="margin-top:14px; text-transform:uppercase;" onkeydown="if(event.key==='Enter'){ submitRedo(); }" />
+    <p class="err" id="redo-err" style="display:none;"></p>
+    <div class="btnrow" style="margin-top:14px;">
+      <button class="btn secondary" onclick="cancelRedo()">Cancel</button>
+      <button class="btn" onclick="submitRedo()">Unlock re-attempt →</button>
+    </div>
+  </div>
+</div>
 
 <!-- warning overlay -->
 <div class="overlay" id="warn-overlay" role="alertdialog" aria-modal="true">
@@ -4174,6 +4193,7 @@ function renderExamLists(){
       : "Remove <b>"+e.code+"</b> ("+esc(e.title)+")? This teacher-built exam only exists for this session, so it cannot be restored.";
     th += '<div class="exam-item"><button type="button" class="exam-pick" onclick="pickExam(\''+e.code+'\'); showRole(\'student\'); window.scrollTo({top:0,behavior:\'smooth\'});"><span class="code-chip">'+e.code+'</span><span class="et">'+esc(e.title)+'</span><span class="em">'+tmeta+'</span></button>'
       + '<button type="button" class="btn secondary small del-btn" onclick="askRemoveExam(\''+e.code+'\')">🗑 Remove</button></div>'
+      + '<div class="small-note" style="margin:2px 0 10px;">🔁 Re-attempt password for <b>'+e.code+'</b>: <b style="font-size:16px; letter-spacing:1px;">'+esc(redoPwFor(e.code, e) || "—")+'</b> — students can do this exam once on their phone; give this password only to a student you allow to redo it.</div>'
       + '<div class="confirm-box" id="confirm-'+e.code+'" style="display:none;"><p>'+confirmText+'</p><div class="btnrow"><button type="button" class="btn danger small" onclick="confirmRemoveExam(\''+e.code+'\')">Yes, remove it</button><button type="button" class="btn secondary small" onclick="cancelRemoveExam(\''+e.code+'\')">Cancel</button></div></div>';
   });
   /* Uploaded exam files have no code, so they are NOT listed for students
@@ -4227,7 +4247,7 @@ function goToRules(){
     $("rules-exam-title").textContent=rec.name;
     $("rules-exam-meta").textContent="Uploaded exam file · runs inside the lockdown · " + name + " · Class " + cls;
     $("rules-limit-text").textContent="3 strikes";
-    showScreen("screen-rules");
+    attemptGate("", name, function(){ showScreen("screen-rules"); });
     return;
   }
   if(code && BAKED_EXAMS[code] && !isHiddenBuiltin(code)){
@@ -4241,7 +4261,7 @@ function goToRules(){
     $("rules-exam-title").textContent=BAKED_EXAMS[code].title;
     $("rules-exam-meta").textContent=(BAKED_EXAMS[code].subtitle ? BAKED_EXAMS[code].subtitle : (BAKED_EXAMS[code].qcount+" questions \u00b7 "+BAKED_EXAMS[code].mins+" minutes")) + " \u00b7 runs inside the lockdown \u00b7 " + name + " \u00b7 Class " + cls;
     $("rules-limit-text").textContent="3 strikes";
-    showScreen("screen-rules");
+    attemptGate(code, name, function(){ showScreen("screen-rules"); });
     return;
   }
   if(!code || !EXAMS[code] || isHiddenBuiltin(code)){ err.textContent="That exam code was not found. Check the code from your teacher, or tap an exam above."; err.style.display="block"; return; }
@@ -4252,7 +4272,7 @@ function goToRules(){
   $("rules-exam-title").textContent=S.exam.title;
   $("rules-exam-meta").textContent=S.exam.questions.length+" questions · "+S.exam.mins+" minutes · " + S.studentName + " · Class " + cls;
   $("rules-limit-text").textContent=S.exam.limit+" strikes";
-  showScreen("screen-rules");
+  attemptGate(code, name, function(){ showScreen("screen-rules"); });
 }
 function backHome(){
   exitLockdown();
@@ -4265,6 +4285,135 @@ function backHome(){
   renderExamLists();
   showScreen("screen-home");
 }
+
+/* ================= ONE ATTEMPT + REDO PASSWORDS + KEYBOARD OFF (2026-11-15) =================
+   One attempt: when a student STARTS a coded exam, this phone remembers
+   (exam code + student name). Starting the same exam again under the same
+   name is blocked until the student types that exam's re-attempt password.
+   Each exam has a DIFFERENT password. Only its SHA-256 digest is checked
+   here; the readable passwords are shown only inside the Teacher tab
+   (Ready exams list), decoded from REDO_PW_SHOW after the teacher unlock.
+   Keyboard: every input/textarea on this page and inside exam frames gets
+   autocorrect / autocapitalize / autocomplete / spellcheck switched OFF,
+   and a MutationObserver keeps that true for fields added later. */
+var REDO_PW_HASH = {
+  "U2GQ": "6cef7c51c55f8a36e292c56cdae6ddb2e369a8ceda24be0e145d5e1dc5194a4e",
+  "U2VR": "03fddf0e79ac7fd548050662a5bddcaf8c3f01a7998cbfb1159835debf98191c",
+  "U2LV": "2b5f735d97f533de04b1d51d08d9f3040523ca13daff242be89dabf7345fc9bd",
+  "U45V": "641ba7be143d77ab2836701046c87de86a730b272d4054e3ddf654fcbeba8a67",
+  "A2T3": "a808e229bc6fa7c22724feabf71e364d6835f2cb09f9354e56e17e821b90c568",
+  "A2T4": "ac46201fae7b5b43ab4aba15f0ad0ab97f6899051e60a7d20184728d70ecf89e",
+  "U2SW": "4f7d3a147b1c863d96aa8963e0b71f366cd59fee2838ade3e41adf9c1b69fbef",
+  "U2WG": "0d87721e5328f21c4456b4df959ec47b9b56043a338d6da8d8610b1456840451",
+  "U5RV": "684d1039610b30b0e5f78de91cc1fa9bce0931e68c8e90803bfd5b4a1ad64086",
+  "U5WQ": "303d3b32c1626edd40f2b2ffd781a6b8ca0f32eea1ef0d21119bfee22e2e6c59"
+};
+var REDO_PW_SHOW = {
+  "U2GQ": "RkZONC0yVFZD",
+  "U2VR": "U1hWOS1FRTdY",
+  "U2LV": "SEJKOC1QMkFB",
+  "U45V": "WDJFVS1IREc0",
+  "A2T3": "REZYOS1TQVVR",
+  "A2T4": "RzJRQi1RSlY3",
+  "U2SW": "NFIyUC0yOVNV",
+  "U2WG": "WEVFUi03RU5N",
+  "U5RV": "UEhXRi1BNVZS",
+  "U5WQ": "WFdSSC0zNFA3"
+};
+var ATTEMPT_KEY = "lockdownAttemptsV1";
+function normName(n){ return String(n || "").trim().replace(/\s+/g, " ").toLowerCase(); }
+function attemptKey(code, name){ return String(code || "").toUpperCase() + "|" + normName(name); }
+function loadAttempts(){ try{ var raw = localStorage.getItem(ATTEMPT_KEY); var o = raw ? JSON.parse(raw) : {}; return (o && typeof o === "object") ? o : {}; }catch(e){ return {}; } }
+function saveAttempts(o){ try{ localStorage.setItem(ATTEMPT_KEY, JSON.stringify(o)); }catch(e){} }
+function getAttempt(code, name){ return loadAttempts()[attemptKey(code, name)] || null; }
+function markAttemptUsed(){
+  try{
+    if(!S || !S.exam || !S.exam.code || !S.studentName){ return; }
+    var all = loadAttempts(), k = attemptKey(S.exam.code, S.studentName), prev = all[k];
+    all[k] = { code: S.exam.code, name: S.studentName, cls: S.studentClass || "", count: (prev && prev.count ? prev.count : 0) + 1, lastAt: new Date().toISOString() };
+    saveAttempts(all);
+  }catch(e){}
+}
+function clearAttemptLocks(){
+  try{ localStorage.removeItem(ATTEMPT_KEY); }catch(e){}
+  toast("Attempt locks cleared on this device — exams can be started on this phone again.");
+}
+function redoPwFor(code, examObj){
+  if(examObj && examObj.redoPw){ return examObj.redoPw; }
+  var enc = REDO_PW_SHOW[code];
+  if(!enc){ return ""; }
+  try{ return atob(enc).split("").reverse().join(""); }catch(e){ return ""; }
+}
+function sha256Hex(str){
+  if(window.crypto && crypto.subtle && crypto.subtle.digest){
+    return crypto.subtle.digest("SHA-256", new TextEncoder().encode(str)).then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf), function(b){ return ("0" + b.toString(16)).slice(-2); }).join("");
+    });
+  }
+  return Promise.resolve("");
+}
+var redoPending = null;
+function attemptGate(code, name, proceed){
+  code = String(code || "").toUpperCase();
+  if(!code){ proceed(); return; }
+  var rec = getAttempt(code, name);
+  if(!rec){ proceed(); return; }
+  redoPending = { code: code, proceed: proceed };
+  $("redo-text").innerHTML = "<b>" + esc(name) + "</b> already started <b>" + esc(code) + "</b> on this phone. Each student can do an exam <b>once</b>.<br><br>To do it again, ask your teacher for the <b>re-attempt password for " + esc(code) + "</b> and type it here:";
+  $("redo-pw").value = "";
+  $("redo-err").style.display = "none";
+  $("redo-overlay").classList.add("show");
+  setTimeout(function(){ try{ $("redo-pw").focus(); }catch(e){} }, 60);
+}
+function cancelRedo(){ redoPending = null; $("redo-overlay").classList.remove("show"); }
+function submitRedo(){
+  if(!redoPending){ return; }
+  var code = redoPending.code, typed = $("redo-pw").value.trim().toUpperCase(), err = $("redo-err");
+  var done = function(ok){
+    if(ok){
+      var p = redoPending; redoPending = null;
+      $("redo-overlay").classList.remove("show");
+      if(p && p.proceed){ p.proceed(); }
+    } else {
+      err.textContent = "That is not the re-attempt password for " + code + ". Ask your teacher for the " + code + " password.";
+      err.style.display = "block";
+    }
+  };
+  var examObj = (typeof EXAMS !== "undefined" && EXAMS[code]) ? EXAMS[code] : null;
+  if(examObj && examObj.redoPw){ done(typed === String(examObj.redoPw).toUpperCase()); return; }
+  var want = REDO_PW_HASH[code];
+  if(!want){ done(false); return; }
+  sha256Hex(typed).then(function(h){ done(h === want); }).catch(function(){ done(false); });
+}
+function applyNoKeyboardToDoc(doc){
+  if(!doc){ return; }
+  var els;
+  try{ els = doc.querySelectorAll("input, textarea"); }catch(e){ return; }
+  for(var i = 0; i < els.length; i++){
+    try{
+      els[i].setAttribute("autocorrect", "off");
+      els[i].setAttribute("autocapitalize", "off");
+      els[i].setAttribute("autocomplete", "off");
+      els[i].setAttribute("spellcheck", "false");
+      els[i].spellcheck = false;
+    }catch(e){}
+  }
+}
+function installDocObserver(doc, win){
+  try{
+    if(!doc || !win || !win.MutationObserver || doc.__lkNoKbObserver){ return; }
+    doc.__lkNoKbObserver = true;
+    var pending = false;
+    var obs = new win.MutationObserver(function(){
+      if(pending){ return; }
+      pending = true;
+      setTimeout(function(){ pending = false; applyNoKeyboardToDoc(doc); }, 120);
+    });
+    obs.observe(doc.documentElement, { childList: true, subtree: true });
+  }catch(e){}
+}
+applyNoKeyboardToDoc(document);
+installDocObserver(document, window);
 
 /* ================= TEACHER BUILDER ================= */
 var qbCount=0;
@@ -4296,10 +4445,11 @@ function publishExam(){
   err.style.display="none";
   var code=""; var chars="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   do{ code=""; for(var i=0;i<4;i++){ code+=chars[Math.floor(Math.random()*chars.length)]; } }while(EXAMS[code]);
-  EXAMS[code]={ code:code, title:title, subject:"Teacher-made exam", mins:mins, limit:limit, questions:qs };
+  var redoPw=""; for(var rpi=0;rpi<4;rpi++){ redoPw+=chars[Math.floor(Math.random()*chars.length)]; } redoPw+="-"; for(var rpj=0;rpj<4;rpj++){ redoPw+=chars[Math.floor(Math.random()*chars.length)]; }
+  EXAMS[code]={ code:code, title:title, subject:"Teacher-made exam", mins:mins, limit:limit, questions:qs, redoPw:redoPw };
   CUSTOM_CODES[code]=true;
   renderExamLists();
-  $("qb-published").innerHTML='<div class="big-code">'+code+'</div><p class="small-note" style="text-align:center;">Published! Give students this code. It works on this device for this session — tap below to try it as a student.</p><button class="btn secondary" style="margin-top:10px;" onclick="pickExam(\''+code+'\'); showRole(\'student\'); window.scrollTo({top:0,behavior:\'smooth\'});">Open in student entry →</button>';
+  $("qb-published").innerHTML='<div class="big-code">'+code+'</div><p class="small-note" style="text-align:center;">Published! Give students this code. 🔁 Re-attempt password for this exam: <b>'+redoPw+'</b> (also listed under Ready exams). It works on this device for this session — tap below to try it as a student.</p><button class="btn secondary" style="margin-top:10px;" onclick="pickExam(\''+code+'\'); showRole(\'student\'); window.scrollTo({top:0,behavior:\'smooth\'});">Open in student entry →</button>';
   toast("Exam published — code "+code);
 }
 
@@ -4447,7 +4597,7 @@ function exitLockdown(){ S.active=false; exitFull(); }
 function startExam(){
   S.idx=0; S.incidents=[]; S.leaves=0; S.blocked=0; S.finished=false; S.warnOpen=false; S.leftAt=0; S.awayEpisode=false; S.strikeGuard=false;
   S.answers=S.exam.questions.map(function(){ return null; });
-  S.startAt=Date.now(); S.active=true;
+  S.startAt=Date.now(); S.active=true; markAttemptUsed();
   document.body.classList.add("exam-on");
   $("brandbar").style.display="none"; $("mainwrap").style.display="none";
   showScreen("screen-exam");
@@ -4796,7 +4946,7 @@ function startFrameSession(){
   S.idx=0; S.incidents=[]; S.leaves=0; S.blocked=0; S.finished=false; S.warnOpen=false; S.leftAt=0; S.awayEpisode=false; S.strikeGuard=false;
   S.answers=[]; S.frameProtected=false; S.frameNote="";
   S.frameFocused=false; S.frameWin=null; if(S.blurTimer){ clearTimeout(S.blurTimer); S.blurTimer=null; }
-  S.startAt=Date.now(); S.active=true;
+  S.startAt=Date.now(); S.active=true; markAttemptUsed();
   document.body.classList.add("exam-on");
   $("brandbar").style.display="none"; $("mainwrap").style.display="none";
   showScreen("screen-frame");
@@ -4872,6 +5022,7 @@ function injectFrameProtection(){
     doc.addEventListener("selectstart", function(e){ try{ e.preventDefault(); }catch(err){} }, true);
     var st=doc.createElement("style");
     st.textContent="*:not(input):not(textarea):not(select){-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}";
+    applyNoKeyboardToDoc(doc); installDocObserver(doc, fr.contentWindow);
     (doc.head || doc.documentElement).appendChild(st);
     S.frameProtected=true;
   }catch(e){
