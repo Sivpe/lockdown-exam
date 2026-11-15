@@ -4297,28 +4297,28 @@ function backHome(){
    autocorrect / autocapitalize / autocomplete / spellcheck switched OFF,
    and a MutationObserver keeps that true for fields added later. */
 var REDO_PW_HASH = {
-  "U2GQ": "6cef7c51c55f8a36e292c56cdae6ddb2e369a8ceda24be0e145d5e1dc5194a4e",
-  "U2VR": "03fddf0e79ac7fd548050662a5bddcaf8c3f01a7998cbfb1159835debf98191c",
-  "U2LV": "2b5f735d97f533de04b1d51d08d9f3040523ca13daff242be89dabf7345fc9bd",
-  "U45V": "641ba7be143d77ab2836701046c87de86a730b272d4054e3ddf654fcbeba8a67",
-  "A2T3": "a808e229bc6fa7c22724feabf71e364d6835f2cb09f9354e56e17e821b90c568",
-  "A2T4": "ac46201fae7b5b43ab4aba15f0ad0ab97f6899051e60a7d20184728d70ecf89e",
-  "U2SW": "4f7d3a147b1c863d96aa8963e0b71f366cd59fee2838ade3e41adf9c1b69fbef",
-  "U2WG": "0d87721e5328f21c4456b4df959ec47b9b56043a338d6da8d8610b1456840451",
-  "U5RV": "684d1039610b30b0e5f78de91cc1fa9bce0931e68c8e90803bfd5b4a1ad64086",
-  "U5WQ": "303d3b32c1626edd40f2b2ffd781a6b8ca0f32eea1ef0d21119bfee22e2e6c59"
+  "U2GQ": "8efe0fb56b20a22081a8aa2252b152b54680e4b03a7ab065f41906816f6afa4c",
+  "U2VR": "fde521a36c09c2c4ea5db7f6433a435d81900281340e6e308df33ef58d203749",
+  "U2LV": "8bdf0053d7007afea0f424db4a24ceadd75180f47479583f279a0f3d6fa585a2",
+  "U45V": "98043ba7102053ad81a2d1068fdc6f8393a46bfd50fc055bf0df96a2a5a2de88",
+  "A2T3": "7859a911d209b39f1a6b574e492478faa0d97632aa9adc76cbfcadb1020d753b",
+  "A2T4": "3afa5af992e9f8aebacc4f9c384e1fa13df12708f9dab09722d5cf7a19e68ce8",
+  "U2SW": "592446e8ff11bcc856de6c04e7548c38221baf0ff2f60bf35795bddd9a8ca402",
+  "U2WG": "dfb53446125d9094395ce2219974f2bd29ccf11d3124d9e943a10276282db97b",
+  "U5RV": "2836b12e46800d658e2f2fbe67085e06b2927a460c1810d5220bb3a0f07112d5",
+  "U5WQ": "f54b559cb8b68ff82b31bb64ae6f7c4583cbd95155c95dc2e5723881ccc7a233"
 };
 var REDO_PW_SHOW = {
-  "U2GQ": "RkZONC0yVFZD",
-  "U2VR": "U1hWOS1FRTdY",
-  "U2LV": "SEJKOC1QMkFB",
-  "U45V": "WDJFVS1IREc0",
-  "A2T3": "REZYOS1TQVVR",
-  "A2T4": "RzJRQi1RSlY3",
-  "U2SW": "NFIyUC0yOVNV",
-  "U2WG": "WEVFUi03RU5N",
-  "U5RV": "UEhXRi1BNVZS",
-  "U5WQ": "WFdSSC0zNFA3"
+  "U2GQ": "NzhCSw==",
+  "U2VR": "WEJKOQ==",
+  "U2LV": "NFFaWg==",
+  "U45V": "UDI4Uw==",
+  "A2T3": "UjhHUQ==",
+  "A2T4": "QjVXMw==",
+  "U2SW": "OEE4UQ==",
+  "U2WG": "NzdGTQ==",
+  "U5RV": "MlZIRw==",
+  "U5WQ": "RU1SRA=="
 };
 var ATTEMPT_KEY = "lockdownAttemptsV1";
 function normName(n){ return String(n || "").trim().replace(/\s+/g, " ").toLowerCase(); }
@@ -4445,7 +4445,7 @@ function publishExam(){
   err.style.display="none";
   var code=""; var chars="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   do{ code=""; for(var i=0;i<4;i++){ code+=chars[Math.floor(Math.random()*chars.length)]; } }while(EXAMS[code]);
-  var redoPw=""; for(var rpi=0;rpi<4;rpi++){ redoPw+=chars[Math.floor(Math.random()*chars.length)]; } redoPw+="-"; for(var rpj=0;rpj<4;rpj++){ redoPw+=chars[Math.floor(Math.random()*chars.length)]; }
+  var redoPw=""; for(var rpi=0;rpi<4;rpi++){ redoPw+=chars[Math.floor(Math.random()*chars.length)]; }
   EXAMS[code]={ code:code, title:title, subject:"Teacher-made exam", mins:mins, limit:limit, questions:qs, redoPw:redoPw };
   CUSTOM_CODES[code]=true;
   renderExamLists();
